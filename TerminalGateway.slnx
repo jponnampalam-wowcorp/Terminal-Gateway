@@ -1,0 +1,13 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path=".gitignore" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="NuGet.config" />
+  </Folder>
+  <Project Path="TerminalGateway.ApiService/TerminalGateway.ApiService.csproj" />
+  <Project Path="TerminalGateway.AppHost/TerminalGateway.AppHost.csproj" />
+  <Project Path="TerminalGateway.ServiceDefaults/TerminalGateway.ServiceDefaults.csproj" />
+  <Project Path="TerminalGateway.Silo/TerminalGateway.Silo.csproj" Id="4ded7a44-5531-4d84-ad9e-871f6af777f8" />
+</Solution>
