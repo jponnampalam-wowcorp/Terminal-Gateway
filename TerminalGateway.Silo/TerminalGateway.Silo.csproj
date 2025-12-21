@@ -8,14 +8,20 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.MongoDB.Driver" />
+    <PackageReference Include="Microsoft.Orleans.Sdk" />
     <PackageReference Include="Microsoft.Orleans.Server" />
+    <PackageReference Include="Orleans.Providers.Mongo" />
     <PackageReference Include="OrleansDashboard" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Extensions" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Extensions.Logging" />
+    <PackageReference Include="Serilog.Settings.Configuration" />
+    <PackageReference Include="Serilog.Sinks.Console" />
+    <PackageReference Include="Serilog.Sinks.File" />
     <PackageReference Include="WPayApps.Licenses.GrainInterfaces" />
     <PackageReference Include="WPayApps.Licenses.Grains" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\TerminalGateway.ServiceDefaults\TerminalGateway.ServiceDefaults.csproj" />
   </ItemGroup>
 
   <ItemGroup>
