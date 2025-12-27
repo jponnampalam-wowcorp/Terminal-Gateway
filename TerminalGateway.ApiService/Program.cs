@@ -1,6 +1,13 @@
+using Aspire.Hosting.ApplicationModel;
+using Aspire.Hosting.Lifecycle;
+using Microsoft.AspNetCore.Http.Features;
+using MongoDB.Driver;
+using MongoDB.Driver.Core.Extensions.DiagnosticSources;
 using Orleans.Configuration;
 using System.Collections;
+using System.Net;
 using System.Text.Json.Serialization;
+using TerminalGateway.ApiService;
 using TerminalGateway.ServiceDefaults;
 
 
@@ -47,6 +54,10 @@ builder.Host
     })
     .ConfigureLogging(logging => logging.AddConsole());
 
+builder.Services.Configure<MongoClientSettings>(options =>
+{
+    options.ClusterConfigurator = cb => cb.Subscribe(new DiagnosticsActivityEventSubscriber());
+});
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
@@ -54,16 +65,45 @@ builder.Services.AddControllers()
     });
 
 // Add services to the container.
-builder.Services.AddProblemDetails();
+builder.Services.AddProblemDetails(options =>
+{
 
+    options.CustomizeProblemDetails = context =>
+    {
+       context.ProblemDetails.Instance=  $"{context.HttpContext.Request.Method} {context.HttpContext.Request.Path}";
+       context.ProblemDetails.Extensions.TryAdd("requestId", context.HttpContext.TraceIdentifier);
+       var activity = context.HttpContext.Features.Get<IHttpActivityFeature>()?.Activity;
+       context.ProblemDetails.Extensions.TryAdd("traceId", activity?.Id);
+       context.ProblemDetails.Extensions.Add("timestamp", DateTime.UtcNow);
+    };
+});
+
+
+//builder.Services.AddLifecycleHook<GetMongoResourceLogsLifecycleHook>();
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 WebApplication app = builder.Build();
 
-IClusterClient client = app.Services.GetRequiredService<IClusterClient>();
-// Configure the HTTP request pipeline.
-app.UseExceptionHandler();
+
+
+app.UseExceptionHandler("/error");
+
+app.Map("/error", async (HttpContext httpContext) =>
+{
+    var problemDetails = new ProblemDetails
+    {
+        Type = "/errors/UnknownError", // Custom error type
+        Title = "An unexpected error occurred.",
+        Status = (int)HttpStatusCode.InternalServerError,
+        Detail = "Something went wrong. Please try again later.",
+        Instance = httpContext.Request.Path // Identifies where the error occurred
+    };
+
+    httpContext.Response.ContentType = "application/json";
+    httpContext.Response.StatusCode = problemDetails.Status.Value;
+    await httpContext.Response.WriteAsJsonAsync(problemDetails);
+});
 
 if (app.Environment.IsDevelopment())
 {
@@ -75,4 +115,8 @@ app.MapDefaultEndpoints();
 app.MapControllers();
 
 app.Run();
+
+
+
+
 

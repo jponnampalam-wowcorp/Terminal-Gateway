@@ -15,11 +15,42 @@ OrleansService orleans = builder.AddOrleans("default").WithClustering(mongoDb);
 
 
 
-// Step 5: Add Silo project
-IResourceBuilder<ProjectResource> silo = builder
-    .AddProject<Projects.TerminalGateway_Silo>("terminalgateway-silo")
+////Step 5: Add Silo project
+//IResourceBuilder<ProjectResource> silo = builder
+//    .AddProject<Projects.TerminalGateway_Silo>("terminalgateway-silo")
+//    .WaitFor(mongoDb)
+//    .WithReference(mongoDb);
+//.WithHttpEndpoint();
+
+
+//Step 6: Add API Service project
+//IResourceBuilder<ProjectResource> apiService = builder
+//    .AddProject<Projects.TerminalGateway_ApiService>("apiservice")
+//    .WaitFor(mongoDb)
+//    .WithReference(mongoDb)
+//    .WithReference(silo)
+//    .WithReference(orleans);
+
+
+
+builder.AddProject<Projects.TerminalGateway_WebApiSilo>("terminalgateway-webapisilo")
     .WaitFor(mongoDb)
-    .WithReference(mongoDb);
+    .WithReference(mongoDb)
+    .WithHttpHealthCheck(path: "/health");
+//.WithHttpEndpoint();
+
+
+////Step 6: Add API Service project
+//IResourceBuilder<ProjectResource> apiService = builder
+//    .AddProject<Projects.TerminalGateway_ApiService>("apiservice")
+//    .WaitFor(mongoDb)
+//    .WithReference(mongoDb)
+//    .WithReference(orleans);
+
+
+
+
+
 
 
 //Step 6: Add API Service project
@@ -27,7 +58,6 @@ IResourceBuilder<ProjectResource> apiService = builder
     .AddProject<Projects.TerminalGateway_ApiService>("apiservice")
     .WaitFor(mongoDb)
     .WithReference(mongoDb)
-    .WithReference(silo)
     .WithReference(orleans);
 
 
@@ -35,17 +65,3 @@ IResourceBuilder<ProjectResource> apiService = builder
 builder.Build().Run();
 
 
-public interface MyInterface
-{
-    void GetName();
-}
-public class MyClass : Aspire.Hosting.ApplicationModel.IResource
-{
-    public MyClass()
-    {
-        Name = "SomeName";
-    }
-
-    public string Name { get; }
-    public ResourceAnnotationCollection Annotations { get; }
-}

@@ -7,14 +7,17 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\Terminal.Gateway.Grains\Terminal.Gateway.Grains.csproj" />
     <ProjectReference Include="..\TerminalGateway.ServiceDefaults\TerminalGateway.ServiceDefaults.csproj" />
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="Aspire.Hosting" />
     <PackageReference Include="Aspire.MongoDB.Driver" />
     <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
     <PackageReference Include="Microsoft.Orleans.Client" />
     <PackageReference Include="Microsoft.Orleans.Sdk" />
+    <PackageReference Include="MongoDB.Driver.Core.Extensions.DiagnosticSources" />
     <PackageReference Include="Orleans.Providers.Mongo" />
     <PackageReference Include="WPayApps.Licenses.GrainInterfaces" />
   </ItemGroup>

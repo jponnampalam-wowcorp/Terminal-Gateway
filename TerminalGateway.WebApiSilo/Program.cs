@@ -1,36 +1,49 @@
-﻿using Aspire.Hosting.ApplicationModel;
-using Aspire.Hosting.Lifecycle;
-using Microsoft.Extensions.DependencyInjection;
-using MongoDB.Driver;
-using MongoDB.Driver.Core.Extensions.DiagnosticSources;
+using k8s.KubeConfigModels;
 using Orleans.Configuration;
 using Serilog;
 using System.Collections;
-using System.Text.Json.Serialization;
 using TerminalGateway.ServiceDefaults;
-
-
+using TerminalGateway.WebApiSilo;
 
 IDictionary environmentVariables = Environment.GetEnvironmentVariables();
 foreach (DictionaryEntry dictionaryEntry in environmentVariables)
 {
     string key = dictionaryEntry.Key.ToString()!;
-    if (key.StartsWith("Orleans__GrainStorage__Default") ||
+    if (key.StartsWith("Orleans__GrainStorage__") ||
         key.StartsWith("Orleans__Clustering__"))
     {
         Environment.SetEnvironmentVariable(key, null);
     }
 }
-WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
-builder.Configuration.AddEnvironmentVariables(prefix: "TerminalGateway__");
 
-// Add service defaults & Aspire client integrations.
-builder.AddServiceDefaults();
+try
+{
+    StartSilo(args);
+    return 0;
+}
+catch (Exception ex)
+{
+    Console.WriteLine(ex);
+    return 1;
+}
 
-builder.AddMongoDBClient("mongo");
+static void StartSilo(string[] args)
+{
+    var builder = WebApplication.CreateBuilder(args);
+    builder.Configuration.AddEnvironmentVariables(prefix: "TerminalGateway__");
+    builder.AddServiceDefaults();
+    builder.Services.AddHealthChecks()
+        .AddCheck<ClusterHealthCheck>("OrleansClusterHealthCheck");
 
+    builder.AddMongoDBClient("mongo");
 
-builder.Host
+    // Add services to the container.
+
+    builder.Services.AddControllers();
+// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+    builder.Services.AddOpenApi();
+
+    builder.Host
         .UseOrleans((context, silo) =>
         {
             string? connectionString = builder.Configuration.GetValue<string>("ConnectionStrings:mongo");
@@ -39,19 +52,17 @@ builder.Host
             {
                 throw new InvalidOperationException("MongoDBConnection string is not configured.");
             }
-
-            // silo.Services.AddSingleton<IMongoClient>(sp => new MongoClient(connectionString));
-            //silo.Services.AddSingleton<IMongoClientFactory, CustomMongoClientFactory>();
-            //silo.Services.AddSingleton<IMongoClient>(sp =>
-            //    sp.GetRequiredService<IMongoClientFactory>().Create("default"));
             silo
                 .ConfigureLogging(logging => logging.AddConsole())
                 .UseMongoDBClient(connectionString)
-                .AddMongoDBGrainStorageAsDefault(options =>
+                .AddMongoDBGrainStorage(
+                    name:"UserStorage",
+                    options=>
                 {
                     options.DatabaseName = "TerminalGatewayDb";
                     // Optional: further configuration, e.g., CreateShardKeyForCosmos if using Azure CosmosDB with Mongo API
                     options.CreateShardKeyForCosmos = false;
+                    
                 })
 
                 .UseMongoDBClustering(options => { options.DatabaseName = "TerminalGatewayDb"; })
@@ -85,49 +96,34 @@ builder.Host
             loggerConfiguration
                 .ReadFrom.Configuration(hostContext.Configuration)
                 .Enrich.FromLogContext();
+               // .WriteTo.OpenTelemetry();
         });
 
 
-builder.Services.Configure<MongoClientSettings>(options =>
-{
-    options.ClusterConfigurator = cb => cb.Subscribe(new DiagnosticsActivityEventSubscriber());
-});
-builder.Services.AddControllers()
-    .AddJsonOptions(options =>
-    {
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
-    });
+    var app = builder.Build();
+    app.MapHealthChecks("/health");
+    
+    app.MapDefaultEndpoints();
 
-// Add services to the container.
-builder.Services.AddProblemDetails();
-
-
-//builder.Services.AddLifecycleHook<GetMongoResourceLogsLifecycleHook>();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
-
-WebApplication app = builder.Build();
-
-//IMongoClient mongoClient = app.Services.GetRequiredService<IMongoClient>();
-//var dbs = mongoClient.ListDatabases();
-//IClusterClient client = app.Services.GetRequiredService<IClusterClient>();
-//var db = mongoClient.GetDatabase("TerminalGatewayDb");
-//db.CreateCollection("wpaycollection");
 // Configure the HTTP request pipeline.
-app.UseExceptionHandler();
+    if (app.Environment.IsDevelopment())
+    {
+        app.MapOpenApi();
+    }
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
+    app.UseHttpsRedirection();
+
+    app.UseAuthorization();
+
+    app.MapControllers();
+
+
+    ILoggerFactory loggerFactory = app.Services.GetRequiredService<ILoggerFactory>();
+    ILogger<Program> logger = loggerFactory.CreateLogger<Program>();
+
+    logger.LogInformation("Host built successfully. Silo starting at {Time}", DateTime.UtcNow);
+
+    
+
+    app.Run();
 }
-
-app.MapDefaultEndpoints();
-
-app.MapControllers();
-
-app.Run();
-
-
-
-
-

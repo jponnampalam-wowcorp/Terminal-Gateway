@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Hosting;
+using OpenTelemetry.Resources;
 
 namespace TerminalGateway.ServiceDefaults;
 
@@ -14,7 +15,7 @@ public static class Extensions
     {
         builder.ConfigureOpenTelemetry();
 
-        builder.AddDefaultHealthChecks();
+    //   builder.AddDefaultHealthChecks();
 
         builder.Services.AddServiceDiscovery();
 
@@ -45,6 +46,8 @@ public static class Extensions
         });
 
         builder.Services.AddOpenTelemetry()
+            .ConfigureResource(resource => resource.
+                AddService(serviceName: "TerminalGatewaySilo", serviceVersion: "1.0.0", serviceInstanceId: Environment.MachineName))
             .WithMetrics(metrics =>
             {
                 metrics.AddAspNetCoreInstrumentation()
@@ -54,6 +57,7 @@ public static class Extensions
             .WithTracing(tracing =>
             {
                 tracing.AddSource(builder.Environment.ApplicationName)
+                    .AddSource("MongoDB.Driver.Core.Extensions.DiagnosticSources")
                     .AddAspNetCoreInstrumentation(tracing =>
                         // Exclude health check requests from tracing
                         tracing.Filter = context =>
@@ -63,6 +67,7 @@ public static class Extensions
                     // Uncomment the following line to enable gRPC instrumentation (requires the OpenTelemetry.Instrumentation.GrpcNetClient package)
                     //.AddGrpcClientInstrumentation()
                     .AddHttpClientInstrumentation();
+
             });
 
         builder.AddOpenTelemetryExporters();
@@ -105,14 +110,15 @@ public static class Extensions
         // See https://aka.ms/dotnet/aspire/healthchecks for details before enabling these endpoints in non-development environments.
         if (app.Environment.IsDevelopment())
         {
-            // All health checks must pass for app to be considered ready to accept traffic after starting
-            app.MapHealthChecks(HealthEndpointPath);
+           // All health checks must pass for app to be considered ready to accept traffic after starting
 
-            // Only health checks tagged with the "live" tag must pass for app to be considered alive
-            app.MapHealthChecks(AlivenessEndpointPath, new HealthCheckOptions
-            {
-                Predicate = r => r.Tags.Contains("live")
-            });
+        //   app.MapHealthChecks(HealthEndpointPath);
+
+            //// Only health checks tagged with the "live" tag must pass for app to be considered alive
+            //app.MapHealthChecks(AlivenessEndpointPath, new HealthCheckOptions
+            //{
+            //    Predicate = r => r.Tags.Contains("live")
+            //});
         }
 
         return app;

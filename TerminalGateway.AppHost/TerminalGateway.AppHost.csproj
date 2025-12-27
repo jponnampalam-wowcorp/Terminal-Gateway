@@ -13,18 +13,15 @@
   <ItemGroup>
     <ProjectReference Include="..\TerminalGateway.ApiService\TerminalGateway.ApiService.csproj" />
     <ProjectReference Include="..\TerminalGateway.Silo\TerminalGateway.Silo.csproj" />
+    <ProjectReference Include="..\TerminalGateway.WebApiSilo\TerminalGateway.WebApiSilo.csproj" />
   </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Aspire.Hosting.AppHost" />
     <PackageReference Include="Aspire.Hosting.MongoDB" />
     <PackageReference Include="Aspire.Hosting.Orleans" />
-    <PackageReference Include="Microsoft.Orleans.Client" />
     <PackageReference Include="Microsoft.Orleans.Sdk" />
     <PackageReference Include="Orleans.Providers.MongoDB" />
-    <PackageReference Include="ReplicaSet.Aspire.MongoDB" />
-    <PackageReference Include="Serilog.Settings.Configuration" />
-    <PackageReference Include="Serilog.Sinks.OpenTelemetry" />
   </ItemGroup>
 
   <ItemGroup>

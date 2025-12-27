@@ -1,4 +1,5 @@
-﻿using WPayApps.Licenses.GrainInterfaces;
+﻿using Terminal.Gateway.Grains;
+using WPayApps.Licenses.GrainInterfaces;
 
 namespace TerminalGateway.ApiService.Controllers
 {
@@ -7,17 +8,45 @@ namespace TerminalGateway.ApiService.Controllers
     public class LicenseController : ControllerBase
     {
         private readonly IClusterClient _client;
+
         public LicenseController(IClusterClient client)
         {
             _client = client;
         }
-        [HttpGet]
-        public async Task<IActionResult> GetLicensesAsync([FromQuery] int page = 0, [FromQuery] int size = 50)
+
+        [HttpPost]
+        public Task<IActionResult> AddUser([FromBody] User userProfile)
         {
 
-            string licenseText = $"Test License. Page={page}, Size = {size}";
-            LicenseData res = await _client.GetGrain<ILicenseGrain>("Mycounter").GetLicenseAsync();
-            return Ok($"License data is {res.Owner}, {res.ExpiryDate}");
+            var res = _client.GetGrain<IUserGrain>(userProfile.UserId);
+            res.AddUser(new UserProfile
+                { Email = userProfile.Email, FirstName = userProfile.FirstName, LastName = userProfile.LastName });
+            return Task.FromResult<IActionResult>(Ok());
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> GetUser([FromQuery] string userId)
+        {
+            try
+            {
+                var res = _client.GetGrain<IUserGrain>(userId);
+                var profile = await res.GetUserProfile();
+                var user = new User
+                {
+                    UserId = userId,
+                    Email = profile.Email,
+                    FirstName = profile.FirstName,
+                    LastName = profile.LastName
+                };
+
+                return Ok(user);
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return Problem("User not found", statusCode: 404);  
+            }
+
         }
     }
 }

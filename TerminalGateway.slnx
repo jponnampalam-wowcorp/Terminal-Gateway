@@ -6,8 +6,10 @@
     <File Path="global.json" />
     <File Path="NuGet.config" />
   </Folder>
+  <Project Path="Terminal.Gateway.Grains/Terminal.Gateway.Grains.csproj" Id="b9fdb578-f567-4a05-8f04-f1dfe157bc30" />
   <Project Path="TerminalGateway.ApiService/TerminalGateway.ApiService.csproj" />
   <Project Path="TerminalGateway.AppHost/TerminalGateway.AppHost.csproj" />
   <Project Path="TerminalGateway.ServiceDefaults/TerminalGateway.ServiceDefaults.csproj" />
   <Project Path="TerminalGateway.Silo/TerminalGateway.Silo.csproj" Id="4ded7a44-5531-4d84-ad9e-871f6af777f8" />
+  <Project Path="TerminalGateway.WebApiSilo/TerminalGateway.WebApiSilo.csproj" />
 </Solution>

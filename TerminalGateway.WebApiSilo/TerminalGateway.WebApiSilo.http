@@ -1,0 +1,6 @@
+@TerminalGateway.WebApiSilo_HostAddress = http://localhost:5258
+
+GET {{TerminalGateway.WebApiSilo_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
