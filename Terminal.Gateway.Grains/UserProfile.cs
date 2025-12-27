@@ -14,6 +14,25 @@ namespace Terminal.Gateway.Grains
         [Id(2)]
         public string Email { get; set; } = string.Empty;
 
+        [Id(3)]
+        public DateTime UpdateDateTime { get; set; } = DateTime.MinValue;
 
+        [Id(4)]
+        public ProfileStatus Status { get; set; } = ProfileStatus.Active;
+
+    }
+
+    public enum ProfileStatus
+    {
+        Active,
+        Inactive,
+        Suspended
+    }
+
+    public enum ActionType
+    {
+        Create,
+        Update,
+        Delete
     }
 }

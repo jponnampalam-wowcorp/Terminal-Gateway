@@ -64,7 +64,6 @@ static void StartSilo(string[] args)
                     options.CreateShardKeyForCosmos = false;
                     
                 })
-
                 .UseMongoDBClustering(options => { options.DatabaseName = "TerminalGatewayDb"; })
                 .UseMongoDBReminders(options =>
                 {

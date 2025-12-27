@@ -10,6 +10,9 @@ using System.Text.Json.Serialization;
 using TerminalGateway.ApiService;
 using TerminalGateway.ServiceDefaults;
 
+using Serilog;
+using Microsoft.Extensions.Hosting;
+
 
 
 IDictionary environmentVariables = Environment.GetEnvironmentVariables();
@@ -22,7 +25,9 @@ foreach (DictionaryEntry dictionaryEntry in environmentVariables)
         Environment.SetEnvironmentVariable(key, null);
     }
 }
+
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
 builder.Configuration.AddEnvironmentVariables(prefix: "TerminalGateway__");
 
 // Add service defaults & Aspire client integrations.
@@ -45,14 +50,15 @@ builder.Host
                 options.ClusterId = "dev";
                 options.ServiceId = "LicenseServerApp";
             })
-        .UseMongoDBClustering(options =>
-        {
-            options.DatabaseName = "TerminalGatewayDb";
-        });
+            .UseMongoDBClustering(options =>
+            {
+                options.DatabaseName = "TerminalGatewayDb";
+            });
 
 
-    })
-    .ConfigureLogging(logging => logging.AddConsole());
+    });
+   
+
 
 builder.Services.Configure<MongoClientSettings>(options =>
 {
@@ -76,6 +82,15 @@ builder.Services.AddProblemDetails(options =>
        context.ProblemDetails.Extensions.TryAdd("traceId", activity?.Id);
        context.ProblemDetails.Extensions.Add("timestamp", DateTime.UtcNow);
     };
+});
+
+builder.Host.UseSerilog((hostContext, services, loggerConfiguration) =>
+{
+    loggerConfiguration
+        .ReadFrom.Configuration(hostContext.Configuration)
+        .ReadFrom.Services(services)
+        .Enrich.FromLogContext()
+        .WriteTo.OpenTelemetry();
 });
 
 

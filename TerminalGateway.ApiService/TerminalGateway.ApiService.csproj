@@ -19,6 +19,11 @@
     <PackageReference Include="Microsoft.Orleans.Sdk" />
     <PackageReference Include="MongoDB.Driver.Core.Extensions.DiagnosticSources" />
     <PackageReference Include="Orleans.Providers.Mongo" />
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+    <PackageReference Include="Serilog.Extensions.Logging" />
+    <PackageReference Include="Serilog.Settings.Configuration" />
+    <PackageReference Include="Serilog.Sinks.OpenTelemetry" />
     <PackageReference Include="WPayApps.Licenses.GrainInterfaces" />
   </ItemGroup>
 

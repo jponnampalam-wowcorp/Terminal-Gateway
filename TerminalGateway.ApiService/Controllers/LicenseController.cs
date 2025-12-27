@@ -1,4 +1,5 @@
-﻿using Terminal.Gateway.Grains;
+﻿using System.Runtime.CompilerServices;
+using Terminal.Gateway.Grains;
 using WPayApps.Licenses.GrainInterfaces;
 
 namespace TerminalGateway.ApiService.Controllers
@@ -8,23 +9,37 @@ namespace TerminalGateway.ApiService.Controllers
     public class LicenseController : ControllerBase
     {
         private readonly IClusterClient _client;
+        private ILogger<LicenseController> _logger;
 
-        public LicenseController(IClusterClient client)
+        public LicenseController(IClusterClient client, ILogger<LicenseController> logger)
         {
             _client = client;
+            _logger= logger;
         }
 
-        [HttpPost]
+        [HttpPost("create")]
         public Task<IActionResult> AddUser([FromBody] User userProfile)
         {
 
             var res = _client.GetGrain<IUserGrain>(userProfile.UserId);
             res.AddUser(new UserProfile
-                { Email = userProfile.Email, FirstName = userProfile.FirstName, LastName = userProfile.LastName });
+            { Email = userProfile.Email, FirstName = userProfile.FirstName, LastName = userProfile.LastName });
+            _logger.LogInformation("user  with email  {email} created/updated", userProfile.Email);
             return Task.FromResult<IActionResult>(Ok());
         }
 
-        [HttpGet]
+        [HttpPost("update")]
+        public Task<IActionResult> UpdateUser([FromBody] User userProfile)
+        {
+
+            var res = _client.GetGrain<IUserGrain>(userProfile.UserId);
+            res.Update(new UserProfile
+                { Email = userProfile.Email, FirstName = userProfile.FirstName, LastName = userProfile.LastName });
+            _logger.LogInformation("user  with email  {email} created/updated", userProfile.Email);
+            return Task.FromResult<IActionResult>(Ok());
+        }
+
+        [HttpGet("get")]
         public async Task<IActionResult> GetUser([FromQuery] string userId)
         {
             try
