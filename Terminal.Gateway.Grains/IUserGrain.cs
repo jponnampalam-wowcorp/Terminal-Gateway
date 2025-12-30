@@ -6,8 +6,11 @@ namespace Terminal.Gateway.Grains
     {
         Task<UserProfile>? GetUserProfile();
 
-        Task AddUser(UserProfile profile);
+        Task AddUser(User profile);
 
-        Task Update(UserProfile profile);
+        Task Update(User profile);
+
+        Task<IReadOnlyList<UserProfile>> GetAuditTrail();
+
     }
 }

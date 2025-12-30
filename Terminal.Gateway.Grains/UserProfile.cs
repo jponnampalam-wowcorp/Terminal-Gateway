@@ -17,9 +17,11 @@ namespace Terminal.Gateway.Grains
         [Id(3)]
         public DateTime UpdateDateTime { get; set; } = DateTime.MinValue;
 
-        [Id(4)]
-        public ProfileStatus Status { get; set; } = ProfileStatus.Active;
+        [Id(4)] public ActionType Action { get; set; } = ActionType.Create;
 
+        [Id(5)] public int Version { get; set; }
+
+        [Id(6)] public string UserId { get; set; }
     }
 
     public enum ProfileStatus

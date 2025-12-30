@@ -58,7 +58,8 @@ IResourceBuilder<ProjectResource> apiService = builder
     .AddProject<Projects.TerminalGateway_ApiService>("apiservice")
     .WaitFor(mongoDb)
     .WithReference(mongoDb)
-    .WithReference(orleans);
+    .WithReference(orleans)
+    .WithHttpHealthCheck(path: "/health");
 
 
 

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using MongoDB.Bson;
 using MongoDB.Driver;
 
 namespace Terminal.Gateway.MongoUtils
@@ -28,6 +29,31 @@ namespace Terminal.Gateway.MongoUtils
                     PipelineStageDefinitionBuilder.Limit<TDocument>(pageSize),
                 }));
 
+            var pipeline = new[]
+            {
+                //new BsonDocument("$project", new BsonDocument
+                //{
+                //   // { "_id", 1 }, // Keep the _id field
+                //    { "LastArrayElement", new BsonDocument("$arrayElemAt", new BsonArray { "$_doc.Log.__values", -1 }) },
+                //    { "_id", 0 }
+                //    // The path to your array: "$Level1.Level2.MyArray"
+                //    // The index -1 refers to the last element
+                //})
+
+                new BsonDocument("$project", new BsonDocument
+                {
+                    // { "_id", 1 }, // Keep the _id field
+                    { "LastArrayElement", new BsonDocument("$arrayElemAt", new BsonArray { "$_doc.Log.__values", -1 }) },
+                    { "_id", 0 }
+                    // The path to your array: "$Level1.Level2.MyArray"
+                    // The index -1 refers to the last element
+                })
+
+            };
+            ProjectionDefinition<BsonDocument> projectionDefinition = pipeline[0];
+
+            var result = await collection.AggregateAsync<BsonDocument>(pipeline).Result.ToListAsync();
+            
 
             var aggregation = await collection.Aggregate()
                 .Match(filterDefinition)

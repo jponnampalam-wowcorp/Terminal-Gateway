@@ -64,6 +64,7 @@ static void StartSilo(string[] args)
                     options.CreateShardKeyForCosmos = false;
                     
                 })
+                .AddLogStorageBasedLogConsistencyProvider("LogStorage")
                 .UseMongoDBClustering(options => { options.DatabaseName = "TerminalGatewayDb"; })
                 .UseMongoDBReminders(options =>
                 {

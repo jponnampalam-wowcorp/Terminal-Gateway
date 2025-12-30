@@ -35,6 +35,9 @@ builder.AddServiceDefaults();
 
 builder.AddMongoDBClient("mongo");
 
+builder.Services.AddHealthChecks()
+    .AddCheck<ApiHealthCheck>("OrleansClientHealthCheck");
+
 
 builder.Host
     .UseOrleansClient((context, clientBuilder) =>
@@ -98,7 +101,10 @@ builder.Host.UseSerilog((hostContext, services, loggerConfiguration) =>
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
+
 WebApplication app = builder.Build();
+
+app.MapHealthChecks("/health");
 
 
 

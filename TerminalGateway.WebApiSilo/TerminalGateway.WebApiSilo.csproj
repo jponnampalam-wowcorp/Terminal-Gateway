@@ -6,6 +6,7 @@
 	  <PackageReference Include="Aspire.Hosting" />
 	  <PackageReference Include="Aspire.MongoDB.Driver" />
 	  <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+	  <PackageReference Include="Microsoft.Orleans.EventSourcing" />
 	  <PackageReference Include="Microsoft.Orleans.Sdk" />
 	  <PackageReference Include="Microsoft.Orleans.Server" />
 	  <PackageReference Include="Orleans.Providers.Mongo" />
