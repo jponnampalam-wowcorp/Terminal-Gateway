@@ -3,76 +3,55 @@ using System.Collections.Generic;
 using System.Text;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using MongoDB.Bson.Serialization.Attributes;
+using MongoDB.Driver;
 
 namespace Terminal.Gateway.MongoUtils
 {
     public static class MongoCollectionQueryByPageExtensions
     {
-        public static async Task<(int totalPages, IReadOnlyList<TDocument> data)> AggregateByPage<TDocument>(
-            this IMongoCollection<TDocument> collection,
-            FilterDefinition<TDocument> filterDefinition,
-            SortDefinition<TDocument> sortDefinition,
+        public static async Task<string> AggregateByPage(
+            this IMongoCollection<BsonDocument> collection,
+            BsonDocument projectStage,
             int page,
             int pageSize)
         {
-            var countFacet = AggregateFacet.Create("count",
-                PipelineDefinition<TDocument, AggregateCountResult>.Create(new[]
-                {
-                    PipelineStageDefinitionBuilder.Count<TDocument>()
-                }));
+            var skipStage = new BsonDocument("$skip", page);
+            var limitStage = new BsonDocument("$limit",pageSize);
 
-            var dataFacet = AggregateFacet.Create("data",
-                PipelineDefinition<TDocument, TDocument>.Create(new[]
-                {
-                    PipelineStageDefinitionBuilder.Sort(sortDefinition),
-                    PipelineStageDefinitionBuilder.Skip<TDocument>((page - 1) * pageSize),
-                    PipelineStageDefinitionBuilder.Limit<TDocument>(pageSize),
-                }));
+            // 3. Define the sub-pipeline for the 'data' facet using BsonDocument array
+            var dataFacetPipeline = new BsonArray
+            {
+                projectStage,
+                skipStage,
+                limitStage
+            };
 
+            // 4. Define the sub-pipeline for the 'metadata' (count) facet
+            var metadataFacetPipeline = new BsonArray
+            {
+                new BsonDocument("$count", "total")
+            };
+
+            // 5. Combine sub-pipelines into the main $facet stage
+            var facetStage = new BsonDocument("$facet", new BsonDocument
+            {
+                { "metadata", metadataFacetPipeline },
+                { "data", dataFacetPipeline }
+            });
+
+            // 6. Create the full pipeline and execute
             var pipeline = new[]
             {
-                //new BsonDocument("$project", new BsonDocument
-                //{
-                //   // { "_id", 1 }, // Keep the _id field
-                //    { "LastArrayElement", new BsonDocument("$arrayElemAt", new BsonArray { "$_doc.Log.__values", -1 }) },
-                //    { "_id", 0 }
-                //    // The path to your array: "$Level1.Level2.MyArray"
-                //    // The index -1 refers to the last element
-                //})
-
-                new BsonDocument("$project", new BsonDocument
-                {
-                    // { "_id", 1 }, // Keep the _id field
-                    { "LastArrayElement", new BsonDocument("$arrayElemAt", new BsonArray { "$_doc.Log.__values", -1 }) },
-                    { "_id", 0 }
-                    // The path to your array: "$Level1.Level2.MyArray"
-                    // The index -1 refers to the last element
-                })
-
+                facetStage
             };
-            ProjectionDefinition<BsonDocument> projectionDefinition = pipeline[0];
 
-            var result = await collection.AggregateAsync<BsonDocument>(pipeline).Result.ToListAsync();
-            
+            var pipelineDefinition = PipelineDefinition<BsonDocument, BsonDocument>.Create(pipeline);
 
-            var aggregation = await collection.Aggregate()
-                .Match(filterDefinition)
-                .Facet(countFacet, dataFacet)
-                .ToListAsync();
+            var results = await collection.AggregateAsync(pipelineDefinition);
+            var data = await results.FirstOrDefaultAsync();
 
-            var count = aggregation.First()
-                .Facets.First(x => x.Name == "count")
-                .Output<AggregateCountResult>()
-                ?.FirstOrDefault()
-                ?.Count;
-
-            var totalPages = (int)Math.Ceiling((double)count / pageSize);
-
-            var data = aggregation.First()
-                .Facets.First(x => x.Name == "data")
-                .Output<TDocument>();
-
-            return (totalPages, data);
+            return data.ToJson();
         }
     }
 }
