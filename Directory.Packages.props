@@ -40,6 +40,7 @@
     <PackageVersion Include="Serilog.Sinks.Console" Version="6.1.1" />
     <PackageVersion Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageVersion Include="Serilog.Sinks.OpenTelemetry" Version="4.2.0" />
+    <PackageVersion Include="System.Text.Json" Version="10.0.1" />
     <PackageVersion Include="WPayApps.Licenses.GrainInterfaces" Version="1.0.0" />
     <PackageVersion Include="WPayApps.Licenses.Grains" Version="1.0.0" />
   </ItemGroup>

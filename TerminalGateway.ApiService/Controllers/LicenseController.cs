@@ -1,6 +1,9 @@
-﻿using MongoDB.Bson.Serialization.Attributes;
+﻿using System.Dynamic;
+using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
 using System.Runtime.CompilerServices;
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using MongoDB.Bson;
 using Terminal.Gateway.Grains;
 using Terminal.Gateway.MongoUtils;
@@ -146,7 +149,6 @@ namespace TerminalGateway.ApiService.Controllers
                             "User",
                             new BsonDocument("$arrayElemAt", new BsonArray { "$_doc.Log.__values", -1 })
                         },
-                        {"_type", 0},
                         { "_id", 1 }
                         // The path to your array: "$Level1.Level2.MyArray"
                         // The index -1 refers to the last element
@@ -154,8 +156,31 @@ namespace TerminalGateway.ApiService.Controllers
                     page: page,
                     pageSize: size);
 
+                JsonNode node = JsonNode.Parse(json);
+                JsonNode dataNode = node["data"];
+                JsonArray arr = dataNode.AsArray();
 
-                return Ok(json);
+                var users = new List<User>();
+
+                foreach (var user in arr)
+                {
+
+                    var obj = user.AsObject();
+                    
+                    var newUser =JsonSerializer.Deserialize<User>(obj[1].ToString());
+                    newUser.UserId = obj[0].ToString();
+                    //newUser.FirstName = obj[1]["FirstName"].ToString();
+                    //newUser.LastName = obj[1]["LastName"].ToString();
+                    //newUser.Email = obj[1]["Email"].ToString();
+                    //newUser.UpdateDateTime = DateTime.Parse(obj[1]["UpdateDateTime"].ToString()!);
+                    //newUser.Action = Enum.Parse<ActionType>(obj[1]["Action"].ToString()!);
+                    users.Add(newUser);
+                }
+
+
+
+
+                return Ok(users);
             }
             catch (Exception e)
             {
