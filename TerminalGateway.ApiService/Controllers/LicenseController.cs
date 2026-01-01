@@ -1,13 +1,15 @@
-﻿using System.Dynamic;
+﻿using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using MongoDB.Driver;
+using System.Dynamic;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using MongoDB.Bson;
+using System.Text.Json.Serialization;
 using Terminal.Gateway.Grains;
 using Terminal.Gateway.MongoUtils;
 using WPayApps.Licenses.GrainInterfaces;
+
 
 namespace TerminalGateway.ApiService.Controllers
 {
@@ -83,6 +85,7 @@ namespace TerminalGateway.ApiService.Controllers
         }
 
         [HttpGet("getAllLicenses")]
+        
         public async Task<IActionResult> GetAudit(int page, int size)
         {
             try
@@ -141,46 +144,96 @@ namespace TerminalGateway.ApiService.Controllers
 
                 //var results = await collection.Aggregate(pipelineDefinition).FirstOrDefaultAsync();
                 //var json = results.ToJson();
-                var json = await collection.AggregateByPage(
+
+                var projections = new BsonDocument[]
+                {
+                    // Stage 1: Extract the last element of the "items" array
+                    // and place it into a new field "lastItem"
+                    new BsonDocument("$addFields", new BsonDocument
+                    {
+                        { "lastItem", new BsonDocument("$arrayElemAt", new BsonArray { "$_doc.Log.__values", -1 }) }
+                    }),
+
+                    // Stage 2: Merge the fields of "lastItem" into the root document,
+                    // effectively "flattening" its contents.
+                    new BsonDocument("$replaceRoot", new BsonDocument
+                    {
+                        { "newRoot", new BsonDocument("$mergeObjects", new BsonArray { "$$ROOT", "$lastItem" }) }
+                    }),
+
+                    // Stage 3: (Optional) Project the final output to exclude the original array 
+                    // and the intermediate "lastItem" field, if desired.
                     new BsonDocument("$project", new BsonDocument
                     {
-                        // { "_id", 1 }, // Keep the _id field
-                        {
-                            "User",
-                            new BsonDocument("$arrayElemAt", new BsonArray { "$_doc.Log.__values", -1 })
-                        },
-                        { "_id", 1 }
-                        // The path to your array: "$Level1.Level2.MyArray"
-                        // The index -1 refers to the last element
-                    }),
+                        { "items", 0 }, // Exclude the original array
+                        { "lastItem", 0 }, // Exclude the intermediate field
+                        { "_doc", 0},
+                        {"_etag",0},
+                        {"_grainId", 0},
+                        {"__type",0},
+                        {"__id",0}
+
+                        // Add other fields you want to explicitly include or exclude
+                    })
+                };
+
+                //var results = await collection.AggregateAsync<BsonDocument>(pipeline);
+                //var list = await results.ToListAsync();
+                //var json = list.ToJson();
+
+                var json = await collection.AggregateByPage(
+                    projections.ToList(),
+                    // new BsonDocument("$project", new BsonDocument
+                    //{
+                    //    { "_id", 1 },
+                    //    {
+                    //        "User",
+                    //        new BsonDocument("$arrayElemAt", new BsonArray { "$_doc.Log.__values", -1 })
+                    //    }
+
+                    //    // The path to your array: "$Level1.Level2.MyArray"
+                    //    // The index -1 refers to the last element
+                    //}),
                     page: page,
                     pageSize: size);
 
+                //JsonNode node = JsonNode.Parse(json);
+                //JsonNode dataNode = node["data"];
+                //JsonArray arr = dataNode.AsArray();
+
+                //var users = new List<User>();
+
+                //foreach (var user in arr)
+                //{
+
+                //    var obj = user.AsObject();
+
+                //    var newUser =JsonSerializer.Deserialize<User>(obj[1].ToString());
+                //    newUser.UserId = obj[0].ToString();
+                //    //newUser.FirstName = obj[1]["FirstName"].ToString();
+                //    //newUser.LastName = obj[1]["LastName"].ToString();
+                //    //newUser.Email = obj[1]["Email"].ToString();
+                //    //newUser.UpdateDateTime = DateTime.Parse(obj[1]["UpdateDateTime"].ToString()!);
+                //    //newUser.Action = Enum.Parse<ActionType>(obj[1]["Action"].ToString()!);
+                //    users.Add(newUser);
+                //}
                 JsonNode node = JsonNode.Parse(json);
                 JsonNode dataNode = node["data"];
-                JsonArray arr = dataNode.AsArray();
-
-                var users = new List<User>();
-
-                foreach (var user in arr)
+                JsonNode count = node["totalCount"];
+             //   var wrappedJson = new { Users = dataNode }.ToJson(); // Or manually construct: $"{{\"Users\":{dataNode.ToJsonString()}}}"
+                var options = new JsonSerializerOptions
                 {
+                    PropertyNameCaseInsensitive = true
+                };
+                var result = dataNode.Deserialize<List<UserSummary>>(options);
 
-                    var obj = user.AsObject();
-                    
-                    var newUser =JsonSerializer.Deserialize<User>(obj[1].ToString());
-                    newUser.UserId = obj[0].ToString();
-                    //newUser.FirstName = obj[1]["FirstName"].ToString();
-                    //newUser.LastName = obj[1]["LastName"].ToString();
-                    //newUser.Email = obj[1]["Email"].ToString();
-                    //newUser.UpdateDateTime = DateTime.Parse(obj[1]["UpdateDateTime"].ToString()!);
-                    //newUser.Action = Enum.Parse<ActionType>(obj[1]["Action"].ToString()!);
-                    users.Add(newUser);
-                }
+                var totalCount = count.Deserialize<List<TotalCount>>(options);
+             //   int docCount = totalCount.FirstOrDefault()?.Total.FirstOrDefault() ?? 0;
+             var summary = new UsersSummary { Users = result, TotalCount = totalCount.FirstOrDefault().Total };
 
-
-
-
-                return Ok(users);
+             var summaryDeSerialized = JsonSerializer.Serialize(summary);
+            
+                return Ok(summary);  
             }
             catch (Exception e)
             {
@@ -205,6 +258,37 @@ namespace TerminalGateway.ApiService.Controllers
             Doc = doc;
            
         }
+    }
+
+    public class UsersSummary
+    {
+        public List<UserSummary> Users { get; set; } 
+        public int? TotalCount { get; set; }
+    }
+
+    public class UserSummary
+    {
+        [BsonId] // Maps the C# Id property to the MongoDB _id field
+        [BsonRepresentation(BsonType.ObjectId)]
+        public string UserId { get; set; }
+
+             public string FirstName { get; set; } = string.Empty;
+
+             public string LastName { get; set; } = string.Empty;
+
+             public string Email { get; set; } = string.Empty;
+
+             public DateTime UpdateDateTime { get; set; } = DateTime.MinValue;
+
+             public ActionType Action { get; set; } = ActionType.Create;
+
+
+
+    }
+
+    public class TotalCount
+    {
+        public int Total { get; set; }
     }
 
 }

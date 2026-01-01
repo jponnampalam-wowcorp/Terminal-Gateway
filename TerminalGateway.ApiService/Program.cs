@@ -1,17 +1,17 @@
 using Aspire.Hosting.ApplicationModel;
 using Aspire.Hosting.Lifecycle;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.Extensions.Hosting;
 using MongoDB.Driver;
 using MongoDB.Driver.Core.Extensions.DiagnosticSources;
 using Orleans.Configuration;
+using Serilog;
 using System.Collections;
 using System.Net;
+using System.Text.Json;
 using System.Text.Json.Serialization;
 using TerminalGateway.ApiService;
 using TerminalGateway.ServiceDefaults;
-
-using Serilog;
-using Microsoft.Extensions.Hosting;
 
 
 
@@ -70,7 +70,9 @@ builder.Services.Configure<MongoClientSettings>(options =>
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
     {
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        //options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+        options.JsonSerializerOptions.RespectRequiredConstructorParameters = true;
+        options.JsonSerializerOptions.PropertyNamingPolicy = JsonNamingPolicy.CamelCase;
     });
 
 // Add services to the container.

@@ -1,10 +1,12 @@
-﻿using Orleans;
+﻿using MongoDB.Bson.Serialization.Attributes;
+using Orleans;
 
 namespace Terminal.Gateway.Grains
 {
     [GenerateSerializer, Immutable]
     public record User
     {
+        [BsonElement("_id")]
         [Id(0)] public string UserId { get; set; }
 
         [Id(1)] public string FirstName { get; set; } = string.Empty;
